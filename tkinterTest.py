@@ -74,9 +74,13 @@ class App(tk.Tk):
 
     def add(self):
         dirs = tkfilebrowser.askopendirnames()
-        for filename in dirs:
-            self.listbox.insert(tk.END, filename)
-            print(f"{filename} added")
+        #add dirs in the listbox, but verify that the line doesn't exist already
+        for dir in dirs:
+            if dir not in self.listbox.get(0, tk.END):
+                self.listbox.insert(tk.END, dir)
+                print(f"{dir} added")
+            else:
+                print(f"{dir} already in the list")
 
     def delete(self):
         if self.listbox.curselection() == ():
