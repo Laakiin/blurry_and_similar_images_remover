@@ -21,20 +21,20 @@ class App(tk.Tk):
 
 
         #create frames for layout with two columns and two rows but on the second row, the column span is 2
-        top_frame = tk.Frame(self, background="yellow")
+        top_frame = tk.Frame(self)
         top_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
-        top_right_frame = tk.Frame(top_frame, background="red")
+        top_right_frame = tk.Frame(top_frame)
         top_right_frame.pack(side="right", fill="both", expand=True)
 
-        top_left_frame = tk.Frame(top_frame, background="red")
+        top_left_frame = tk.Frame(top_frame)
         top_left_frame.pack(side="left", fill="both", expand=True)
 
 
-        middle_frame = tk.Frame(self, background="green")
+        middle_frame = tk.Frame(self)
         middle_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
 
-        bottom_frame = tk.Frame(self, background="blue")
+        bottom_frame = tk.Frame(self)
         bottom_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
         #add a menu bar
         menu_bar = tk.Menu(self)
@@ -72,14 +72,15 @@ class App(tk.Tk):
 
 #top right frame
         dirs = []
-        #display of a list of lines
-        self.listbox = tk.Listbox(top_right_frame, bg="white", fg="black", selectmode="multiple")
-        self.listbox.pack(side="right",expand=True)
-        #add a scrollbar to the listbox
+        #display of a list of lines in a listbox widget with a scrollbar in the top right frame
+        self.listbox = tk.Listbox(top_right_frame, bg="white", fg="black")
+        self.listbox.pack(side="left", expand=True, fill="both")
         self.scrollbar = tk.Scrollbar(top_right_frame, orient="vertical")
         self.scrollbar.config(command=self.listbox.yview)
-        self.scrollbar.pack(side="right", fill="y", after=self.listbox)
+        self.scrollbar.pack(fill="y",side="right", after=self.listbox)
         self.listbox.config(yscrollcommand=self.scrollbar.set)
+
+
 
 
         #add a button next to the listbox used to delete the selected line
