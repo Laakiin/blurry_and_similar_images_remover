@@ -1,15 +1,17 @@
 ##tkinter test with printf in the window
 import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog
+from tkinter import *
 import tkfilebrowser
+
+ver="0.1"
 
 class App(tk.Tk):
     def __init__(self):
 
         tk.Tk.__init__(self)
         self.title("Hello, Tkinter")
-        self.geometry("600x500")
+        self.geometry("660x600")
         self.resizable(False, False)
 
         self.grid_rowconfigure(0, weight=1)
@@ -21,9 +23,19 @@ class App(tk.Tk):
         #create frames for layout with two columns and two rows but on the second row, the column span is 2
         top_frame = tk.Frame(self, background="yellow")
         top_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
-        bottom_frame = tk.Frame(self, background="green")
-        bottom_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
 
+        top_right_frame = tk.Frame(top_frame, background="red")
+        top_right_frame.pack(side="right", fill="both", expand=True)
+
+        top_left_frame = tk.Frame(top_frame, background="red")
+        top_left_frame.pack(side="left", fill="both", expand=True)
+
+
+        middle_frame = tk.Frame(self, background="green")
+        middle_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+
+        bottom_frame = tk.Frame(self, background="blue")
+        bottom_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
         #add a menu bar
         menu_bar = tk.Menu(self)
         self.config(menu=menu_bar)
@@ -34,6 +46,7 @@ class App(tk.Tk):
         settings_menu.add_command(label="Image filetypes")
         settings_menu.add_command(label="Similarity threshold")
         settings_menu.add_command(label="Blurry threshold")
+        menu_bar.add_command(label="About", command=self.about)
 
 
 
@@ -41,15 +54,18 @@ class App(tk.Tk):
 
 #bottom frame
 
-        #add a text widget to the bottom frame and add a scrollbar to it, so we can scroll the text inside it, under this text widget, add a clear button to clear the text widget
-        self.text = tk.Text(bottom_frame, bg="white", fg="black")
-        self.text.pack(side="top")
-        self.scrollbar = tk.Scrollbar(bottom_frame, orient="vertical")
+        #add a text widget to the bottom frame with a scrollbar
+        self.text = tk.Text(middle_frame, bg="white", fg="black")
+        self.text.pack(side="left", expand=True)
+        self.scrollbar = tk.Scrollbar(middle_frame, orient="vertical")
         self.scrollbar.config(command=self.text.yview)
-        self.scrollbar.pack(side="right", fill="y", after=self.text)
+        self.scrollbar.pack(fill="y",side="right", after=self.text)
         self.text.config(yscrollcommand=self.scrollbar.set)
+        #now add a clear button to the bottom frame under the text widget and scrollbar to clear the text widget
         self.btn_clear = ttk.Button(bottom_frame, text="Clear", command=self.clear)
-        self.btn_clear.pack(fill="x", expand=True, side="right")
+        self.btn_clear.pack(fill="x")
+
+
 
 
 
@@ -57,20 +73,21 @@ class App(tk.Tk):
 #top right frame
         dirs = []
         #display of a list of lines
-        self.listbox = tk.Listbox(top_frame, bg="white", fg="black", selectmode="multiple")
+        self.listbox = tk.Listbox(top_right_frame, bg="white", fg="black", selectmode="multiple")
         self.listbox.pack(side="right",expand=True)
         #add a scrollbar to the listbox
-        self.scrollbar = tk.Scrollbar(top_frame, orient="vertical")
+        self.scrollbar = tk.Scrollbar(top_right_frame, orient="vertical")
         self.scrollbar.config(command=self.listbox.yview)
         self.scrollbar.pack(side="right", fill="y", after=self.listbox)
         self.listbox.config(yscrollcommand=self.scrollbar.set)
 
 
         #add a button next to the listbox used to delete the selected line
-        self.btn_del = ttk.Button(top_frame, text="Delete", command=self.delete)
-        self.btn_del.pack(fill="x")
-        self.btn_add = ttk.Button(top_frame, text="Add", command=self.add)
-        self.btn_add.pack(fill="x")
+        self.btn_add = ttk.Button(top_left_frame, text="Add", command=self.add)
+        self.btn_add.pack(fill="x", ipady=10,side="top")
+        self.btn_del = ttk.Button(top_left_frame, text="Delete", command=self.delete)
+        self.btn_del.pack(fill="x", ipady=10,side="top")
+
 
     def add(self):
         dirs = tkfilebrowser.askopendirnames()
@@ -93,7 +110,7 @@ class App(tk.Tk):
         indexes=list(index)
         print(indexes)
         #delete the selected line
-        for i in indexes:
+        for i in range(len(indexes)):
             self.listbox.delete(indexes[i])
             print(f"Line {indexes[i]} deleted")
 
@@ -113,6 +130,10 @@ class App(tk.Tk):
         self.txt.configure(state="normal")
         self.txt.insert(tk.END, text)
         self.txt.configure(state="disabled")
+
+    def about(self):
+        tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrent version is the {ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
+
 
 if __name__ == "__main__":
     app = App()
