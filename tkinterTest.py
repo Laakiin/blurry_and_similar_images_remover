@@ -1,10 +1,15 @@
 ##tkinter test with printf in the window
 import tkinter as tk
 from tkinter import ttk
-from tkinter import *
 import tkfilebrowser
 
-ver="0.1"
+ver="0.8"
+
+blurry_threshold = "10"
+similarity_threshold = "0.82"
+image_filetypes = "jpg;jpeg;png;bmp;tiff;tif"
+
+
 
 class App(tk.Tk):
     def __init__(self):
@@ -43,16 +48,16 @@ class App(tk.Tk):
         #add a settings menu
         settings_menu = tk.Menu(menu_bar, tearoff=0)
         menu_bar.add_cascade(label="Settings", menu=settings_menu)
-        settings_menu.add_command(label="Image filetypes")
-        settings_menu.add_command(label="Similarity threshold")
-        settings_menu.add_command(label="Blurry threshold")
+        settings_menu.add_command(label="Image filetypes", command=self.open_image_filetypes)
+        settings_menu.add_command(label="Similarity threshold" , command=self.open_similarity_threshold)
+        settings_menu.add_command(label="Blurry threshold", command=self.open_blurry_threshold)
         menu_bar.add_command(label="About", command=self.about)
 
+        self.similarity_threshold_window = None
+        self.blurry_threshold_window = None
+        self.image_filetypes_window = None
 
-
-
-
-#bottom frame
+        #bottom frame
 
         #add a text widget to the bottom frame with a scrollbar
         self.text = tk.Text(middle_frame, bg="white", fg="black")
@@ -66,11 +71,7 @@ class App(tk.Tk):
         self.btn_clear.pack(fill="x")
 
 
-
-
-
-
-#top right frame
+        #top right frame
         dirs = []
         #display of a list of lines in a listbox widget with a scrollbar in the top right frame
         self.listbox = tk.Listbox(top_right_frame, bg="white", fg="black")
@@ -132,9 +133,124 @@ class App(tk.Tk):
         self.txt.insert(tk.END, text)
         self.txt.configure(state="disabled")
 
+    def open_similarity_threshold(self):
+        if self.similarity_threshold_window is not None:
+            return  # The window is already open, do not open another instance
+
+        self.similarity_threshold_window = tk.Toplevel(self)
+        self.similarity_threshold_window.title("Similarity threshold")
+        self.similarity_threshold_window.geometry("300x120")
+        self.similarity_threshold_window.resizable(False, False)
+
+        self.similarity_threshold_window.grid_rowconfigure(0, weight=1)
+        self.similarity_threshold_window.grid_rowconfigure(1, weight=1)
+        self.similarity_threshold_window.grid_columnconfigure(0, weight=1)
+        self.similarity_threshold_window.grid_columnconfigure(1, weight=1)
+
+        self.label = ttk.Label(self.similarity_threshold_window, text="Similarity threshold")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.slider = tk.Scale(self.similarity_threshold_window, from_=0, to=1, resolution=0.01, orient="horizontal")
+        self.slider.set(float(similarity_threshold))
+        self.slider.pack(fill="x", padx=10, pady=2)
+
+        self.btn_save = ttk.Button(self.similarity_threshold_window, text="Save", command=self.save_similarity_threshold)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+
+    def save_similarity_threshold(self):
+        similarity_threshold = self.slider.get()
+        self.similarity_threshold_window.destroy()
+        self.similarity_threshold_window = None  # Reset the reference to None after the window is closed
+        self.update_similarity_threshold(similarity_threshold)
+
+    def update_similarity_threshold(self, value):
+        global similarity_threshold
+        similarity_threshold = value
+        print(f"Similarity threshold updated: {similarity_threshold}")
+
+    def open_blurry_threshold(self):
+        if self.blurry_threshold_window is not None:
+            return
+
+        self.blurry_threshold_window = tk.Toplevel(self)
+        self.blurry_threshold_window.title("Blurry threshold")
+        self.blurry_threshold_window.geometry("300x110")
+        self.blurry_threshold_window.resizable(False, False)
+
+        self.blurry_threshold_window.grid_rowconfigure(0, weight=1)
+        self.blurry_threshold_window.grid_rowconfigure(1, weight=1)
+        self.blurry_threshold_window.grid_columnconfigure(0, weight=1)
+        self.blurry_threshold_window.grid_columnconfigure(1, weight=1)
+
+        self.label = ttk.Label(self.blurry_threshold_window, text="Blurry threshold")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.slider = tk.Scale(self.blurry_threshold_window, from_=0, to=50, resolution=1, orient="horizontal")
+        self.slider.set(float(blurry_threshold))
+        self.slider.pack(fill="x", padx=10, pady=2)
+
+        self.btn_save = ttk.Button(self.blurry_threshold_window, text="Save", command=self.save_blurry_threshold)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+
+    def save_blurry_threshold(self):
+        blurry_threshold = self.slider.get()
+        self.blurry_threshold_window.destroy()
+        self.blurry_threshold_window = None
+        self.update_blurry_threshold(blurry_threshold)
+
+    def update_blurry_threshold(self, value):
+        global blurry_threshold
+        blurry_threshold = value
+        print(f"Blurry threshold updated: {blurry_threshold}")
+
+
+    def open_image_filetypes(self):
+        if self.image_filetypes_window is not None:
+            return
+
+        self.image_filetypes_window = tk.Toplevel(self)
+        self.image_filetypes_window.title("Image filetypes")
+        self.image_filetypes_window.geometry("300x110")
+        self.image_filetypes_window.resizable(False, False)
+
+        self.image_filetypes_window.grid_rowconfigure(0, weight=1)
+        self.image_filetypes_window.grid_rowconfigure(1, weight=1)
+        self.image_filetypes_window.grid_columnconfigure(0, weight=1)
+        self.image_filetypes_window.grid_columnconfigure(1, weight=1)
+
+        self.label = ttk.Label(self.image_filetypes_window, text="Image filetypes")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.entry = ttk.Entry(self.image_filetypes_window)
+        self.entry.insert(0, image_filetypes)
+        self.entry.pack(fill="x", padx=10, pady=2)
+
+
+        self.btn_save = ttk.Button(self.image_filetypes_window, text="Save", command=self.save_image_filetypes)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+
+    def save_image_filetypes(self):
+        image_filetypes = self.entry.get()
+        self.image_filetypes_window.destroy()
+        self.image_filetypes_window = None
+        self.update_image_filetypes(image_filetypes)
+
+    def update_image_filetypes(self, value):
+        global image_filetypes
+        image_filetypes = value
+        print(f"Image filetypes updated: {image_filetypes}")
+
     def about(self):
         tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrent version is the {ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
 
+    #function that open a new window  displaying hello world while clicking on the button
+
+
+    def blurry_threshold(self):
+        return
+
+    def image_filetypes(self):
+        return
 
 if __name__ == "__main__":
     app = App()
