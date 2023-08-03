@@ -1,13 +1,18 @@
-##tkinter test with printf in the window
 import tkinter as tk
 from tkinter import ttk
 import tkfilebrowser
+import PIL
+from sewar.full_ref import uqi
+from PIL import Image
+import os
+import numpy as np
+import cv2
 
-ver="0.8"
+ver="0.9"
 
 blurry_threshold = "10"
 similarity_threshold = "0.82"
-image_filetypes = "jpg;jpeg;png;bmp;tiff;tif"
+image_filetypes = [".jpg", ".png", ".jpeg", ".JPG", ".JPEG", ".PNG"]
 
 
 
@@ -16,8 +21,8 @@ class App(tk.Tk):
 
         tk.Tk.__init__(self)
         self.title("Hello, Tkinter")
-        self.geometry("660x600")
-        self.resizable(False, False)
+        self.geometry("960x600")
+        self.resizable(True, True)
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -61,7 +66,7 @@ class App(tk.Tk):
 
         #add a text widget to the bottom frame with a scrollbar
         self.text = tk.Text(middle_frame, bg="white", fg="black")
-        self.text.pack(side="left", expand=True)
+        self.text.pack(side="left", expand=True, fill="both")
         self.scrollbar = tk.Scrollbar(middle_frame, orient="vertical")
         self.scrollbar.config(command=self.text.yview)
         self.scrollbar.pack(fill="y",side="right", after=self.text)
@@ -90,7 +95,42 @@ class App(tk.Tk):
         self.btn_del = ttk.Button(top_left_frame, text="Delete", command=self.delete)
         self.btn_del.pack(fill="x", ipady=10,side="top")
 
+        self.btn_start = ttk.Button(top_left_frame, text="Start", command=self.start)
+        self.btn_start.pack(fill="x", ipady=10, side="bottom")
 
+
+    def start(self):
+        #if listbox is empty, alert the user with a message box
+        if self.listbox.size() == 0:
+            print("No directory selected")
+            return
+        global blurry_threshold
+        global similarity_threshold
+        global image_filetypes
+        #get the list of directories from the listbox
+        dirs = self.listbox.get(0, tk.END)
+        for i in range(len(dirs)):
+            imgs=self.list_img(dirs[i],image_filetypes)
+            logs_file = open("logs.txt", "a")
+            logs_file.write(f"------------------------------------\n")
+            logs_file.write(f"Images that are going to be analysed: {imgs}\n")
+            self.addText(f"Images that are going to be analysed in {dirs[i]}: {imgs}\n")
+            logs_file.write(f"Number of images: {len(imgs)}\n")
+            self.addText(f"Number of images: {len(imgs)}\n")
+            logs_file.write(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n")
+            logs_file.write("Logs begin:\n")
+            self.addText(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n")
+            blur_removed, rmv = self.remove_blurry(imgs, logs_file)
+            logs_file.write(f"Blurry images removed: \n{rmv}\n")
+            self.addText(f"Blurry images removed: \n{rmv}\n")
+            double_removed, rmv = self.remove_double(blur_removed, logs_file)
+            self.addText(f"Double images removed: \n{rmv}\n")
+            logs_file.write(f"Double images removed: \n{rmv}\n")
+            logs_file.write("Logs end\n")
+            logs_file.write(f"------------------------------------\n")
+            logs_file.close()
+            print("Program finished")
+        return
     def add(self):
         dirs = tkfilebrowser.askopendirnames()
         #add dirs in the listbox, but verify that the line doesn't exist already
@@ -128,10 +168,10 @@ class App(tk.Tk):
         self.txt.configure(state="disabled")
         print("Cleared")
 
-    def addText(self, text):
-        self.txt.configure(state="normal")
-        self.txt.insert(tk.END, text)
-        self.txt.configure(state="disabled")
+    def addText(self, txt):
+        self.text.configure(state="normal")
+        self.text.insert(tk.END, txt)
+        self.text.configure(state="disabled")
 
     def open_similarity_threshold(self):
         if self.similarity_threshold_window is not None:
@@ -237,20 +277,93 @@ class App(tk.Tk):
 
     def update_image_filetypes(self, value):
         global image_filetypes
-        image_filetypes = value
+        #split the string into a list
+        image_filetypes = value.split(" ")
         print(f"Image filetypes updated: {image_filetypes}")
 
     def about(self):
         tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrent version is the {ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
 
-    #function that open a new window  displaying hello world while clicking on the button
+    def list_img(self,path,image_filetypes):
+        imgs = []
+        for file in os.listdir(path):
+            if file.endswith(tuple(image_filetypes)):
+                imgs.append(f"{path}\\{file}")
+            else:
+                continue
+        return imgs
 
+    def remove_blurry(self,imgs,logs_file):
+        try:
+            rmv = []
+            for i in range(len(imgs)):
+                img = np.array(Image.open(f"{imgs[i]}"))
+                laplacian = cv2.Laplacian(img, cv2.CV_64F).var()
+                logs_file.write(f"Blurry value of '{imgs[i]}': {laplacian}\n")
+                print(f"Blurry value of '{imgs[i]}': {laplacian}")
+                self.addText(f"Blurry value of '{imgs[i]}': {laplacian}\n")
+                if laplacian < 10:
+                    logs_file.write(f"{imgs[i]} is too blurry and has been deleted\n")
+                    print(f"{imgs[i]} is too blurry and has been deleted")
+                    self.addText(f"{imgs[i]} is too blurry and has been deleted\n")
+                    rmv.append(imgs[i])
+                    os.remove(imgs[i])
+                    imgs.remove(imgs[i])
+                else:
+                    continue
+            return imgs, rmv
+        except IndexError:
+            return imgs, rmv
+        except PIL.UnidentifiedImageError:
+            logs_file.write("PIL.UnidentifiedImageError\n")
+            imgs.remove(imgs[i])
+            self.remove_blurry(imgs, logs_file)
+            return imgs, rmv
+        except PermissionError:
+            logs_file.write("PermissionError\n")
+            self.remove_blurry(imgs, logs_file)
+            return imgs, rmv
 
-    def blurry_threshold(self):
-        return
-
-    def image_filetypes(self):
-        return
+    def remove_double(self,imgs,logs_file):
+        try:
+            rmv = []
+            for i in range(len(imgs)):
+                for j in range(len(imgs)):
+                    if i != j:
+                        img1 = np.array(Image.open(f"{imgs[i]}"))
+                        img2 = np.array(Image.open(f"{imgs[j]}"))
+                        if img1.shape == img2.shape:
+                            uqi_value = uqi(img1, img2)
+                            logs_file.write(
+                                f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n")
+                            print(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%")
+                            self.addText(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n")
+                            if uqi_value > 0.82:
+                                logs_file.write(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n")
+                                print(f"{imgs[i]} is similar to {imgs[j]} and has been deleted")
+                                self.addText(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n")
+                                rmv.append(imgs[i])
+                                os.remove(imgs[i])
+                                imgs.remove(imgs[i])
+                                break
+                            else:
+                                continue
+                        else:
+                            continue
+                    else:
+                        continue
+            return imgs, rmv
+        except IndexError:
+            return imgs, rmv
+        except PIL.UnidentifiedImageError:
+            logs_file.write("PIL.UnidentifiedImageError\n")
+            imgs.remove(imgs[i])
+            self.remove_double(imgs,logs_file)
+            return imgs, rmv
+        except PermissionError:
+            logs_file.write("PermissionError\n")
+            self.remove_double(imgs,logs_file)
+            return imgs, rmv
 
 if __name__ == "__main__":
     app = App()
