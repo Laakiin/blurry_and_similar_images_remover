@@ -9,7 +9,7 @@ import os
 import numpy as np
 import cv2
 
-ver="1.4"
+ver="1.5"
 
 blurry_threshold = "10"
 similarity_threshold = "0.9"
@@ -123,6 +123,7 @@ class App(tk.Tk):
         global image_filetypes
         #get the list of directories from the listbox
         for i in range(len(dirs)):
+            self.update()
             imgs=self.list_img(dirs[i],image_filetypes)
             logs_file = open("logs.txt", "a")
             logs_file.write(f"------------------------------------\n")
