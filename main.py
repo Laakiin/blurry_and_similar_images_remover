@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import filedialog
 import tkfilebrowser
 import PIL
 from sewar.full_ref import uqi
@@ -8,12 +9,13 @@ import os
 import numpy as np
 import cv2
 
-ver="1.0"
+ver="1.4"
 
 blurry_threshold = "10"
 similarity_threshold = "0.9"
 image_filetypes = [".jpg", ".png", ".jpeg", ".JPG", ".JPEG", ".PNG"]
 
+initialdir = os.getcwd()
 
 
 class App(tk.Tk):
@@ -56,11 +58,13 @@ class App(tk.Tk):
         settings_menu.add_command(label="Image filetypes", command=self.open_image_filetypes)
         settings_menu.add_command(label="Similarity threshold" , command=self.open_similarity_threshold)
         settings_menu.add_command(label="Blurry threshold", command=self.open_blurry_threshold)
+        settings_menu.add_command(label="Preferences", command=self.open_preferences)
         menu_bar.add_command(label="About", command=self.about)
 
         self.similarity_threshold_window = None
         self.blurry_threshold_window = None
         self.image_filetypes_window = None
+        self.preferences_window = None
 
         #bottom frame
 
@@ -74,6 +78,11 @@ class App(tk.Tk):
         #now add a clear button to the bottom frame under the text widget and scrollbar to clear the text widget
         self.btn_clear = ttk.Button(bottom_frame, text="Clear", command=self.clear)
         self.btn_clear.pack(fill="x")
+
+        self.progress_total = ttk.Progressbar(bottom_frame, orient="horizontal", length=200, mode="determinate",)
+        self.progress_total.pack(fill="x")
+        self.progress_total["value"] = 0
+        self.progress_total["maximum"] = 100
 
 
         #top right frame
@@ -99,8 +108,11 @@ class App(tk.Tk):
         self.btn_start.pack(fill="x", ipady=10, side="bottom")
 
 
+
     def start(self):
         dirs = self.listbox.get(0, tk.END)
+        nb_elem=len(dirs)
+        step=100/nb_elem
         if dirs == ():
             #add a message box to inform the user that no directory has been selected
             tk.messagebox.showerror("No directory selected", "Please select at least one directory")
@@ -130,12 +142,21 @@ class App(tk.Tk):
             logs_file.write("Logs end\n")
             logs_file.write(f"------------------------------------\n")
             logs_file.close()
-            self.clear_list()
-            tk.messagebox.showinfo("Task complete", "The task has been completed")
-            print("Program finished")
+            self.delete_line(dirs[i])
+            self.progress_total["value"] += step
+
+        tk.messagebox.showinfo("Task complete", "The task has been completed")
+        print("Program finished")
         return
+
+    #function that deletes a line in the listbox searching by the content of the line and not the selected line
+    def delete_line(self,line):
+        #get the index of the line
+        index=self.listbox.get(0, tk.END).index(line)
+        #delete the linef
+        self.listbox.delete(index)
     def add(self):
-        dirs = tkfilebrowser.askopendirnames()
+        dirs = tkfilebrowser.askopendirnames(title="Select a directory", initialdir=initialdir , okbuttontext="Select", cancelbuttontext="Cancel", foldercreation=False)
         #add dirs in the listbox, but verify that the line doesn't exist already
         for dir in dirs:
             if dir not in self.listbox.get(0, tk.END):
@@ -221,6 +242,62 @@ class App(tk.Tk):
         similarity_threshold = value
         print(f"Similarity threshold updated: {similarity_threshold}")
 
+    def open_preferences(self):
+        if self.preferences_window is not None:
+            return  # The window is already open, do not open another instance
+
+        self.preferences_window = tk.Toplevel(self)
+        self.preferences_window.title("Preferences")
+        self.preferences_window.geometry("300x120")
+        self.preferences_window.resizable(False, False)
+
+        self.preferences_window.grid_rowconfigure(0, weight=1)
+        self.preferences_window.grid_rowconfigure(1, weight=1)
+        self.preferences_window.grid_columnconfigure(0, weight=1)
+        self.preferences_window.grid_columnconfigure(1, weight=1)
+
+        self.upper_frame = ttk.Frame(self.preferences_window)
+        self.upper_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
+
+        self.middle_frame = ttk.Frame(self.preferences_window)
+        self.middle_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+
+        self.lower_frame = ttk.Frame(self.preferences_window)
+        self.lower_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
+
+        #add menu bar to the window with a info button
+        self.menu_bar = tk.Menu(self.preferences_window)
+        self.preferences_window.config(menu=self.menu_bar)
+        self.menu_bar.add_command(label="Info", command=self.info_preferences)
+
+        self.label = ttk.Label(self.upper_frame, text="Preferences")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.dir_input = ttk.Entry(self.middle_frame)
+        self.dir_input.pack(ipadx=50,padx=2,pady=2, side="left")
+
+        self.btn_dir = ttk.Button(self.middle_frame, text="Select dir", command=self.select_dir)
+        self.btn_dir.pack(after=self.dir_input, side="right", padx=2, pady=2)
+
+        self.btn_save = ttk.Button(self.lower_frame, text="Save", command=self.save_preferences)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+
+    def select_dir(self):
+        dir = filedialog.askdirectory(initialdir=initialdir, title="Select directory")
+        self.dir_input.delete(0, tk.END)
+        self.dir_input.insert(0, dir)
+    def info_preferences(self):
+        tk.messagebox.showinfo("Info", "Here you can select the initial directory where the you will be while adding directories.")
+    def save_preferences(self):
+        preferences = self.dir_input.get()
+        self.preferences_window.destroy()
+        self.preferences_window = None  # Reset the reference to None after the window is closed
+        self.update_preferences(preferences)
+
+    def update_preferences(self, value):
+        global initialdir
+        initialdir = value
+        print(f"Initial directory updated: {initialdir}")
     def open_blurry_threshold(self):
         if self.blurry_threshold_window is not None:
             return
@@ -310,7 +387,7 @@ class App(tk.Tk):
         print(f"Image filetypes updated: {image_filetypes}")
 
     def about(self):
-        tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrent version is the {ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
+        tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrently in v{ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
 
     def list_img(self,path,image_filetypes):
         imgs = []
@@ -322,6 +399,7 @@ class App(tk.Tk):
         return imgs
 
     def remove_blurry(self,imgs,logs_file):
+        global blurry_threshold
         try:
             rmv = []
             for i in range(len(imgs)):
@@ -330,7 +408,7 @@ class App(tk.Tk):
                 logs_file.write(f"Blurry value of '{imgs[i]}': {laplacian}\n")
                 print(f"Blurry value of '{imgs[i]}': {laplacian}")
                 self.addText(f"Blurry value of '{imgs[i]}': {laplacian}\n")
-                if laplacian < 10:
+                if laplacian < int(blurry_threshold):
                     logs_file.write(f"{imgs[i]} is too blurry and has been deleted\n")
                     print(f"{imgs[i]} is too blurry and has been deleted")
                     self.addText(f"{imgs[i]} is too blurry and has been deleted\n")
@@ -353,8 +431,9 @@ class App(tk.Tk):
             return imgs, rmv
 
     def remove_double(self,imgs,logs_file):
+        global similarity_threshold
+        rmv=[]
         try:
-            rmv = []
             for i in range(len(imgs)):
                 for j in range(len(imgs)):
                     if i != j:
@@ -366,7 +445,7 @@ class App(tk.Tk):
                                 f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n")
                             print(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%")
                             self.addText(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n")
-                            if uqi_value > 0.82:
+                            if uqi_value > float(similarity_threshold):
                                 logs_file.write(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n")
                                 print(f"{imgs[i]} is similar to {imgs[j]} and has been deleted")
                                 self.addText(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n")
@@ -380,6 +459,8 @@ class App(tk.Tk):
                             continue
                     else:
                         continue
+                #remove the image from the list
+                imgs.remove(imgs[i])
             return imgs, rmv
         except IndexError:
             return imgs, rmv
