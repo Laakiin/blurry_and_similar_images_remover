@@ -8,8 +8,9 @@ from PIL import Image
 import os
 import numpy as np
 import cv2
+import glob
 
-ver="1.5"
+ver="1.6"
 
 blurry_threshold = "10"
 similarity_threshold = "0.9"
@@ -25,6 +26,7 @@ class App(tk.Tk):
         self.title("Blurry/Double Image Remover")
         self.geometry("960x600")
         self.resizable(True, True)
+        #self.iconbitmap("build_files/image-outline-filled.ico")
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -79,10 +81,17 @@ class App(tk.Tk):
         self.btn_clear = ttk.Button(bottom_frame, text="Clear", command=self.clear)
         self.btn_clear.pack(fill="x")
 
+        self.progress_current = ttk.Progressbar(bottom_frame, orient="horizontal", length=200, mode="determinate", )
+        self.progress_current.pack(fill="x")
+        self.progress_current["value"] = 0
+        self.progress_current["maximum"] = 100
+
         self.progress_total = ttk.Progressbar(bottom_frame, orient="horizontal", length=200, mode="determinate",)
         self.progress_total.pack(fill="x")
         self.progress_total["value"] = 0
         self.progress_total["maximum"] = 100
+
+
 
 
         #top right frame
@@ -158,13 +167,16 @@ class App(tk.Tk):
         self.listbox.delete(index)
     def add(self):
         dirs = tkfilebrowser.askopendirnames(title="Select a directory", initialdir=initialdir , okbuttontext="Select", cancelbuttontext="Cancel", foldercreation=False)
-        #add dirs in the listbox, but verify that the line doesn't exist already
+        child_dirs = []
         for dir in dirs:
-            if dir not in self.listbox.get(0, tk.END):
-                self.listbox.insert(tk.END, dir)
-                print(f"{dir} added")
-            else:
-                print(f"{dir} already in the list")
+            child_dirs.append(self.listchilddirs(dir))
+        #add the selected directories and their subdirectories to the listbox
+        for i in range(len(child_dirs)):
+            for j in range(len(child_dirs[i])):
+                self.listbox.insert(tk.END, child_dirs[i][j])
+        print(child_dirs)
+        print("Directory added")
+
 
     def delete(self):
         if self.listbox.curselection() == ():
@@ -399,11 +411,21 @@ class App(tk.Tk):
                 continue
         return imgs
 
+    def listchilddirs(self,rootdir):
+        dirs = []
+        dirs.append(rootdir)
+        for path in glob.glob(f'{rootdir}/*/**/', recursive=True):
+            dirs.append(path)
+        return dirs
+
     def remove_blurry(self,imgs,logs_file):
         global blurry_threshold
+        self.progress_current = 0
+        step = 100/len(imgs)
         try:
             rmv = []
             for i in range(len(imgs)):
+                self.update()
                 img = np.array(Image.open(f"{imgs[i]}"))
                 laplacian = cv2.Laplacian(img, cv2.CV_64F).var()
                 logs_file.write(f"Blurry value of '{imgs[i]}': {laplacian}\n")
@@ -418,6 +440,7 @@ class App(tk.Tk):
                     imgs.remove(imgs[i])
                 else:
                     continue
+                self.progress_current += step
             return imgs, rmv
         except IndexError:
             return imgs, rmv
@@ -434,9 +457,13 @@ class App(tk.Tk):
     def remove_double(self,imgs,logs_file):
         global similarity_threshold
         rmv=[]
+        self.progress_current = 0
+        len_img=len(imgs)
+        step = 100/(len_img*(len_img-1))
         try:
             for i in range(len(imgs)):
                 for j in range(len(imgs)):
+                    self.update()
                     if i != j:
                         img1 = np.array(Image.open(f"{imgs[i]}"))
                         img2 = np.array(Image.open(f"{imgs[j]}"))
@@ -462,6 +489,8 @@ class App(tk.Tk):
                         continue
                 #remove the image from the list
                 imgs.remove(imgs[i])
+                #update the progress bar
+                self.progress_current += step
             return imgs, rmv
         except IndexError:
             return imgs, rmv
