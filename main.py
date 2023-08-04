@@ -373,20 +373,8 @@ class App(tk.Tk):
     def clear_list(self):
         self.listbox.delete(0, tk.END)
     def addText(self, txt, arg):
-
         self.text.configure(state="normal")
-        self.text.tag_add("end", "end -1 line")
         self.text.insert(tk.END, txt)
-        if arg=="info":
-            self.text.tag_config("end", foreground="yellow")
-        if arg=="error":
-            self.text.tag_config("end", foreground="red")
-        if arg=="success":
-            self.text.tag_config("end", foreground="green")
-        if arg == "other":
-            self.text.tag_config("end", foreground="blue")
-        else:
-            self.text.tag_config("end", foreground="white")
         self.text.configure(state="disabled")
         self.text.see("end")
     def clear(self):
