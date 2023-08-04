@@ -1,0 +1,1 @@
+{"image_filetypes": [".jpg", ".png", ".jpeg", ".JPG", ".JPEG", ".PNG"], "similarity_threshold": "0.9", "blurry_threshold": "10", "initialdir": "./"}

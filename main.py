@@ -9,7 +9,7 @@ import cv2
 from glob import glob
 import time
 
-ver="1.9"
+ver="1.9.1"
 
 ###GLOBAL VARIABLES###
 
@@ -43,8 +43,6 @@ class App(tk.Tk):
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
-
-        #create frames for layout with two columns and two rows but on the second row, the column span is 2
         top_frame = tk.Frame(self)
         top_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
@@ -54,12 +52,12 @@ class App(tk.Tk):
         top_left_frame = tk.Frame(top_frame)
         top_left_frame.pack(side="left", fill="both", expand=True)
 
-
         middle_frame = tk.Frame(self)
         middle_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
 
         bottom_frame = tk.Frame(self)
         bottom_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
+
         #add a menu bar
         menu_bar = tk.Menu(self)
         self.config(menu=menu_bar)
@@ -80,17 +78,16 @@ class App(tk.Tk):
         self.image_filetypes_window = None
         self.preferences_window = None
 
-
         #bottom frame
-
-        #add a text widget to the bottom frame with a scrollbar
         self.text = tk.Text(middle_frame, bg="black", fg="white")
         self.text.pack(side="left", expand=True, fill="both")
+
         self.scrollbar = tk.Scrollbar(middle_frame, orient="vertical")
         self.scrollbar.config(command=self.text.yview)
         self.scrollbar.pack(fill="y",side="right", after=self.text)
+
         self.text.config(yscrollcommand=self.scrollbar.set)
-        #now add a clear button to the bottom frame under the text widget and scrollbar to clear the text widget
+
         self.btn_clear = ttk.Button(bottom_frame, text="Clear", command=self.clear)
         self.btn_clear.pack(fill="x")
 
@@ -99,19 +96,13 @@ class App(tk.Tk):
         self.progress_current = ttk.Progressbar(bottom_frame,variable=self.current_progress, orient="horizontal", length=200, mode="determinate", )
         self.progress_current.pack(fill="x")
         self.progress_current["value"] = 0
-        self.progress_current["maximum"] = 100
 
         self.progress_total = ttk.Progressbar(bottom_frame, orient="horizontal", length=200, mode="determinate",)
         self.progress_total.pack(fill="x")
         self.progress_total["value"] = 0
-        self.progress_total["maximum"] = 100
-
-
-
 
         #top right frame
         dirs = []
-        #display of a list of lines in a listbox widget with a scrollbar in the top right frame
         self.listbox = tk.Listbox(top_right_frame,selectmode='multiple', bg="white", fg="black")
         self.listbox.pack(side="left", expand=True, fill="both")
         self.scrollbar = tk.Scrollbar(top_right_frame, orient="vertical")
@@ -119,7 +110,6 @@ class App(tk.Tk):
         self.scrollbar.pack(fill="y",side="right", after=self.listbox)
         self.listbox.config(yscrollcommand=self.scrollbar.set)
 
-        #add a button next to the listbox used to delete the selected line
         self.btn_add = ttk.Button(top_left_frame, text="Add", command=self.add)
         self.btn_add.pack(fill="x", ipady=10,side="top")
         self.btn_del = ttk.Button(top_left_frame, text="Delete", command=self.delete)
@@ -278,7 +268,7 @@ class App(tk.Tk):
         image_filetypes = value.split(" ")
     ##########ABOUT FUNCTION############
     def about(self):
-        tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrently in v{ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
+        tk.messagebox.showinfo("About", f"This software was created by Anakin'Laakiin'MARQUES\nCurrently in v{ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
     ##########WINDOW FUNCTIONS############
     def add(self):
         dirs = askopendirnames(title="Select a directory", initialdir=initialdir, okbuttontext="Select",
@@ -312,26 +302,23 @@ class App(tk.Tk):
         start_time = time.time()
 
         dirs = self.listbox.get(0, tk.END)
-        nb_elem=len(dirs)
-        if nb_elem != 0:
-            step=100/nb_elem
-        else:
-            step=0
+
+        self.progress_total["maximum"] = len(dirs)
+
         if dirs == ():
-            #add a message box to inform the user that no directory has been selected
             tk.messagebox.showerror("No directory selected", "Please select at least one directory")
             return
         global blurry_threshold
         global similarity_threshold
         global image_filetypes
         #get the list of directories from the listbox
+        self.progress_total["value"] = 0
         for i in range(len(dirs)):
             if stop:
                 self.current_progress.set(0)
                 self.progress_total["value"] = 0
                 break
             self.update()
-            self.progress_total["value"] =0
             imgs=self.list_img(dirs[i],image_filetypes)
             logs_file = open("logs.txt", "a")
             logs_file.write(f"------------------------------------\n")
@@ -353,7 +340,7 @@ class App(tk.Tk):
             logs_file.write("Logs end\n")
             logs_file.write(f"------------------------------------\n")
             logs_file.close()
-            self.progress_total["value"] += step
+            self.progress_total["value"] += 1
             if not stop:
                 self.delete_line(dirs[i])
 
@@ -423,7 +410,8 @@ class App(tk.Tk):
         global blurry_threshold
         global stop
         self.current_progress.set(0)
-        step = 100/len(imgs)
+        self.progress_current["maximum"] = len(imgs)
+        print(len(imgs))
         try:
             rmv = []
             for i in range(len(imgs)):
@@ -436,20 +424,17 @@ class App(tk.Tk):
                 laplacian = cv2.Laplacian(img, cv2.CV_64F).var()
                 logs_file.write(f"Blurry value of '{imgs[i]}': {laplacian}\n")
                 self.addText(f"Blurry value of '{imgs[i]}': {laplacian}\n","osef")
+                self.update_current_progress(1)
                 if laplacian < int(blurry_threshold):
                     logs_file.write(f"{imgs[i]} is too blurry and has been deleted\n")
                     self.addText(f"{imgs[i]} is too blurry and has been deleted\n","info")
                     rmv.append(imgs[i])
                     remove(imgs[i])
                     imgs.remove(imgs[i])
-                    self.update_current_progress(step)
-
                 else:
-                    self.update_current_progress(step)
                     continue
-
-
             return imgs, rmv
+
         except IndexError:
             return imgs, rmv
         except PIL.UnidentifiedImageError:
@@ -467,7 +452,8 @@ class App(tk.Tk):
         rmv=[]
         self.current_progress.set(0)
         len_img=len(imgs)
-        step = 100/(len_img*(len_img-1))
+        self.progress_current["maximum"]=(len_img*(len_img-1))/2
+        print(len_img,len_img*(len_img-1))
         try:
             for i in range(len(imgs)):
                 if stop:
@@ -481,8 +467,12 @@ class App(tk.Tk):
                         break
                     self.update()
                     if i != j:
-                        img1 = array(PIL.Image.open(f"{imgs[i]}"))
-                        img2 = array(PIL.Image.open(f"{imgs[j]}"))
+                        self.update_current_progress(1)
+                        if imgs[i] or imgs[j] not in rmv:
+                            img1 = array(PIL.Image.open(f"{imgs[i]}"))
+                            img2 = array(PIL.Image.open(f"{imgs[j]}"))
+                        else:
+                            continue
                         if img1.shape == img2.shape:
                             uqi_value = uqi(img1, img2)
                             logs_file.write(
@@ -494,10 +484,8 @@ class App(tk.Tk):
                                 rmv.append(imgs[i])
                                 remove(imgs[i])
                                 imgs.remove(imgs[i])
-                                self.update_current_progress(step)
                                 break
                             else:
-                                self.update_current_progress(step)
                                 continue
                         else:
                             continue
