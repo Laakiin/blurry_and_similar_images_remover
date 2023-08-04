@@ -411,7 +411,6 @@ class App(tk.Tk):
         global stop
         self.current_progress.set(0)
         self.progress_current["maximum"] = len(imgs)
-        print(len(imgs))
         try:
             rmv = []
             for i in range(len(imgs)):
@@ -453,7 +452,6 @@ class App(tk.Tk):
         self.current_progress.set(0)
         len_img=len(imgs)
         self.progress_current["maximum"]=(len_img*(len_img-1))/2
-        print(len_img,len_img*(len_img-1))
         try:
             for i in range(len(imgs)):
                 if stop:
