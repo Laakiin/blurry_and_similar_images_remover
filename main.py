@@ -1,27 +1,24 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
-import tkfilebrowser
+from tkinter import filedialog, ttk
+from tkfilebrowser import askopendirnames
 import PIL
 from sewar.full_ref import uqi
-from PIL import Image
-import os
-import numpy as np
+from os import getcwd, popen, listdir, remove
+from numpy import array
 import cv2
-import glob
+from glob import glob
+import time
 
 
-ver="1.8"
+ver="1.8.2"
 
 blurry_threshold = "10"
 similarity_threshold = "0.9"
 image_filetypes = [".jpg", ".png", ".jpeg", ".JPG", ".JPEG", ".PNG"]
 
-initialdir = os.getcwd()
+initialdir = getcwd()
 
 stop=False
-
-
 
 class App(tk.Tk):
     def __init__(self):
@@ -110,9 +107,6 @@ class App(tk.Tk):
         self.scrollbar.pack(fill="y",side="right", after=self.listbox)
         self.listbox.config(yscrollcommand=self.scrollbar.set)
 
-
-
-
         #add a button next to the listbox used to delete the selected line
         self.btn_add = ttk.Button(top_left_frame, text="Add", command=self.add)
         self.btn_add.pack(fill="x", ipady=10,side="top")
@@ -139,9 +133,14 @@ class App(tk.Tk):
     def start(self):
         global stop
         stop = False
+        #start a timer
+        global start_time
+        start_time = time.time()
+
+
+
         dirs = self.listbox.get(0, tk.END)
         nb_elem=len(dirs)
-        print("Nb elem: ",nb_elem)
         if nb_elem != 0:
             step=100/nb_elem
         else:
@@ -149,7 +148,6 @@ class App(tk.Tk):
         if dirs == ():
             #add a message box to inform the user that no directory has been selected
             tk.messagebox.showerror("No directory selected", "Please select at least one directory")
-            print("No directory selected")
             return
         global blurry_threshold
         global similarity_threshold
@@ -169,9 +167,9 @@ class App(tk.Tk):
             self.addText(f"Images that are going to be analysed in {dirs[i]}: {imgs}\n","other")
             logs_file.write(f"Number of images: {len(imgs)}\n")
             self.addText(f"Number of images: {len(imgs)}\n","other")
-            logs_file.write(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n")
+            logs_file.write(f"{popen('date /t').read()}{popen('time /t').read()}\n")
             logs_file.write("Logs begin:\n")
-            self.addText(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n","other")
+            self.addText(f"{popen('date /t').read()}{popen('time /t').read()}\n","other")
             blur_removed, rmv = self.remove_blurry(imgs, logs_file)
             self.current_progress.set(100)
             logs_file.write(f"Blurry images removed: \n{rmv}\n")
@@ -189,12 +187,17 @@ class App(tk.Tk):
 
 
         if not stop:
-            tk.messagebox.showinfo("Task complete", "The task has been completed")
-            print("Program finished")
+            now=time.time()
+            elapsed_time=now-start_time
+            #convert the elapsed time in hour, minutes and seconds
+            elapsed_time = time.strftime('%Hh%Mm%Ss', time.gmtime(elapsed_time))
+            tk.messagebox.showinfo("Task complete", f"The task has been completed\nTime elapsed: {elapsed_time}")
             return
         else:
-            tk.messagebox.showinfo("Task stopped", "The task has been stopped")
-            print("Program stopped")
+            now=time.time()
+            elapsed_time=now-start_time
+            elapsed_time = time.strftime('%Hh%Mm%Ss', time.gmtime(elapsed_time))
+            tk.messagebox.showinfo("Task stopped", f"The task has been stopped after\nTime elapsed: {elapsed_time}")
             return
         return
 
@@ -205,7 +208,7 @@ class App(tk.Tk):
         #delete the linef
         self.listbox.delete(index)
     def add(self):
-        dirs = tkfilebrowser.askopendirnames(title="Select a directory", initialdir=initialdir , okbuttontext="Select", cancelbuttontext="Cancel", foldercreation=False)
+        dirs = askopendirnames(title="Select a directory", initialdir=initialdir , okbuttontext="Select", cancelbuttontext="Cancel", foldercreation=False)
         child_dirs = []
         for dir in dirs:
             child_dirs.append(self.listchilddirs(dir))
@@ -214,36 +217,28 @@ class App(tk.Tk):
             for j in range(len(child_dirs[i])):
                 if child_dirs[i][j] not in self.listbox.get(0, tk.END):
                     self.listbox.insert(tk.END, child_dirs[i][j])
-                    print("Directories added")
-                else:
-                    print(f"{child_dirs[i][j]} already in the listbox")
 
 
     def delete(self):
         if self.listbox.curselection() == ():
-            print("No line selected")
             return
         #get the index of the selected line
 
         indexes=[]
         index=self.listbox.curselection()
         indexes=list(index)
-        print(indexes)
         #delete the selected line
         for i in range(len(indexes)):
             self.listbox.delete(indexes[i])
-            print(f"Line {indexes[i]} deleted")
 
     #function that clears the listbox
     def clear_list(self):
         self.listbox.delete(0, tk.END)
-        print("Listbox cleared")
 
     def clear(self):
         self.text.configure(state="normal")
         self.text.delete("1.0", tk.END)
         self.text.configure(state="disabled")
-        print("Cleared")
 
     def addText(self, txt, arg):
 
@@ -303,7 +298,6 @@ class App(tk.Tk):
     def update_similarity_threshold(self, value):
         global similarity_threshold
         similarity_threshold = value
-        print(f"Similarity threshold updated: {similarity_threshold}")
 
     def open_preferences(self):
         if self.preferences_window is not None:
@@ -360,7 +354,6 @@ class App(tk.Tk):
     def update_preferences(self, value):
         global initialdir
         initialdir = value
-        print(f"Initial directory updated: {initialdir}")
     def open_blurry_threshold(self):
         if self.blurry_threshold_window is not None:
             return
@@ -402,7 +395,6 @@ class App(tk.Tk):
     def update_blurry_threshold(self, value):
         global blurry_threshold
         blurry_threshold = value
-        print(f"Blurry threshold updated: {blurry_threshold}")
 
 
     def open_image_filetypes(self):
@@ -447,14 +439,13 @@ class App(tk.Tk):
         global image_filetypes
         #split the string into a list
         image_filetypes = value.split(" ")
-        print(f"Image filetypes updated: {image_filetypes}")
 
     def about(self):
         tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrently in v{ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
 
     def list_img(self,path,image_filetypes):
         imgs = []
-        for file in os.listdir(path):
+        for file in listdir(path):
             if file.endswith(tuple(image_filetypes)):
                 imgs.append(f"{path}\\{file}")
             else:
@@ -464,7 +455,7 @@ class App(tk.Tk):
     def listchilddirs(self,rootdir):
         dirs = []
         dirs.append(rootdir)
-        for path in glob.glob(f'{rootdir}/*/**/', recursive=True):
+        for path in glob(f'{rootdir}/*/**/', recursive=True):
             dirs.append(path)
         return dirs
 
@@ -481,19 +472,16 @@ class App(tk.Tk):
                     self.progress_total["value"] = 0
                     break
                 self.update()
-                img = np.array(Image.open(f"{imgs[i]}"))
+                img = array(PIL.Image.open(f"{imgs[i]}"))
                 laplacian = cv2.Laplacian(img, cv2.CV_64F).var()
                 logs_file.write(f"Blurry value of '{imgs[i]}': {laplacian}\n")
-                print(f"Blurry value of '{imgs[i]}': {laplacian}")
                 self.addText(f"Blurry value of '{imgs[i]}': {laplacian}\n","osef")
                 if laplacian < int(blurry_threshold):
                     logs_file.write(f"{imgs[i]} is too blurry and has been deleted\n")
-                    print(f"{imgs[i]} is too blurry and has been deleted")
                     self.addText(f"{imgs[i]} is too blurry and has been deleted\n","info")
                     rmv.append(imgs[i])
-                    os.remove(imgs[i])
+                    remove(imgs[i])
                     imgs.remove(imgs[i])
-                    print(step)
                     self.update_current_progress(step)
 
                 else:
@@ -534,20 +522,18 @@ class App(tk.Tk):
                         break
                     self.update()
                     if i != j:
-                        img1 = np.array(Image.open(f"{imgs[i]}"))
-                        img2 = np.array(Image.open(f"{imgs[j]}"))
+                        img1 = array(PIL.Image.open(f"{imgs[i]}"))
+                        img2 = array(PIL.Image.open(f"{imgs[j]}"))
                         if img1.shape == img2.shape:
                             uqi_value = uqi(img1, img2)
                             logs_file.write(
                                 f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n")
-                            print(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%")
                             self.addText(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n","osef")
                             if uqi_value > float(similarity_threshold):
                                 logs_file.write(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n")
-                                print(f"{imgs[i]} is similar to {imgs[j]} and has been deleted")
                                 self.addText(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n","info")
                                 rmv.append(imgs[i])
-                                os.remove(imgs[i])
+                                remove(imgs[i])
                                 imgs.remove(imgs[i])
                                 self.update_current_progress(step)
                                 break
