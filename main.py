@@ -133,7 +133,6 @@ class App(tk.Tk):
         self.btn_stop = ttk.Button(top_left_frame, text="Stop", command=self.stop)
         self.btn_stop.pack(fill="x", ipady=10, side="bottom")
 
-
     ##########SETTINGS MENU FUNCTIONS############
     def save_settings(self):
         settings = {}
@@ -333,7 +332,6 @@ class App(tk.Tk):
     ##########ABOUT FUNCTION############
     def about(self):
         tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrently in v{ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
-
     ##########WINDOW FUNCTIONS############
     def add(self):
         dirs = askopendirnames(title="Select a directory", initialdir=initialdir, okbuttontext="Select",
@@ -465,7 +463,6 @@ class App(tk.Tk):
         progress_value = self.current_progress.get()
         if progress_value < 100:
             self.current_progress.set(progress_value + value)
-
     ##########CORE FUNCTIONS############
     def list_img(self,path,image_filetypes):
         imgs = []
