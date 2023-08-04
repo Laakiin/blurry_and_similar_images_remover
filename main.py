@@ -70,7 +70,7 @@ class App(tk.Tk):
         settings_menu.add_command(label="Image filetypes", command=self.open_image_filetypes)
         settings_menu.add_command(label="Similarity threshold" , command=self.open_similarity_threshold)
         settings_menu.add_command(label="Blurry threshold", command=self.open_blurry_threshold)
-        settings_menu.add_command(label="Preferences", command=self.open_preferences)
+        settings_menu.add_command(label="Initial directory", command=self.open_initialdir)
         settings_menu.add_command(label="Save settings", command=self.save_settings)
         settings_menu.add_command(label="Load settings", command=self.load_settings)
         menu_bar.add_command(label="About", command=self.about)
@@ -191,62 +191,11 @@ class App(tk.Tk):
     def update_similarity_threshold(self, value):
         global similarity_threshold
         similarity_threshold = value
-    ##########PREFERENCES FUNCTIONS############
-    def open_preferences(self):
+    ##########INITIAL DIRECTORY FUNCTIONS############
+    def open_initialdir(self):
         global initialdir
-        if self.preferences_window is not None:
-            return  # The window is already open, do not open another instance
-
-        self.preferences_window = tk.Toplevel(self)
-        self.preferences_window.title("Preferences")
-        self.preferences_window.geometry("300x120")
-        self.preferences_window.resizable(False, False)
-
-        self.preferences_window.grid_rowconfigure(0, weight=1)
-        self.preferences_window.grid_rowconfigure(1, weight=1)
-        self.preferences_window.grid_columnconfigure(0, weight=1)
-        self.preferences_window.grid_columnconfigure(1, weight=1)
-
-        self.upper_frame = ttk.Frame(self.preferences_window)
-        self.upper_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
-
-        self.middle_frame = ttk.Frame(self.preferences_window)
-        self.middle_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
-
-        self.lower_frame = ttk.Frame(self.preferences_window)
-        self.lower_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
-
-        #add menu bar to the window with a info button
-        self.menu_bar = tk.Menu(self.preferences_window)
-        self.preferences_window.config(menu=self.menu_bar)
-        self.menu_bar.add_command(label="Info", command=self.info_preferences)
-
-        self.label = ttk.Label(self.upper_frame, text="Preferences")
-        self.label.pack(fill="x", padx=10, pady=2)
-
-        self.dir_input = ttk.Entry(self.middle_frame)
-        self.dir_input.pack(ipadx=50,padx=2,pady=2, side="left")
-        self.dir_input.insert(0, initialdir)
-
-        self.btn_dir = ttk.Button(self.middle_frame, text="Select dir", command=self.select_dir)
-        self.btn_dir.pack(after=self.dir_input, side="right", padx=2, pady=2)
-
-        self.btn_save = ttk.Button(self.lower_frame, text="Save", command=self.save_preferences)
-        self.btn_save.pack(fill="x", padx=10, pady=8)
-    def select_dir(self):
         dir = filedialog.askdirectory(initialdir=initialdir, title="Select directory")
-        self.dir_input.delete(0, tk.END)
-        self.dir_input.insert(0, dir)
-    def info_preferences(self):
-        tk.messagebox.showinfo("Info", "Here you can select the initial directory where the you will be while adding directories.")
-    def save_preferences(self):
-        preferences = self.dir_input.get()
-        self.preferences_window.destroy()
-        self.preferences_window = None  # Reset the reference to None after the window is closed
-        self.update_preferences(preferences)
-    def update_preferences(self, value):
-        global initialdir
-        initialdir = value
+        initialdir = dir
     ##########BLURRY THRESHOLD FUNCTIONS############
     def open_blurry_threshold(self):
         if self.blurry_threshold_window is not None:
