@@ -10,13 +10,24 @@ from glob import glob
 import time
 
 
-ver="1.8.2"
+ver="1.9"
 
-blurry_threshold = "10"
-similarity_threshold = "0.9"
-image_filetypes = [".jpg", ".png", ".jpeg", ".JPG", ".JPEG", ".PNG"]
 
-initialdir = getcwd()
+#if there is a json file with the settings, use it to fill blurry and similarity thresholds, image filetypes and initial directory
+#otherwise, use the default values
+try:
+    import json
+    with open("settings.json") as json_file:
+        data = json.load(json_file)
+        similarity_threshold = data["similarity_threshold"]
+        blurry_threshold = data["blurry_threshold"]
+        image_filetypes = data["image_filetypes"]
+        initialdir = data["initialdir"]
+except:
+    similarity_threshold = "0.9"
+    blurry_threshold = "10"
+    image_filetypes = [".jpg", ".jpeg", ".png",".JPG", ".JPEG", ".PNG"]
+    initialdir = getcwd()
 
 stop=False
 
@@ -24,7 +35,7 @@ class App(tk.Tk):
     def __init__(self):
 
         tk.Tk.__init__(self)
-        self.title("Blurry/Double Image Remover")
+        self.title("Blurry and Similar Image Remover")
         self.geometry("960x600")
         self.resizable(True, True)
         #self.iconbitmap("build_files/image-outline-filled.ico")
@@ -62,12 +73,15 @@ class App(tk.Tk):
         settings_menu.add_command(label="Similarity threshold" , command=self.open_similarity_threshold)
         settings_menu.add_command(label="Blurry threshold", command=self.open_blurry_threshold)
         settings_menu.add_command(label="Preferences", command=self.open_preferences)
+        settings_menu.add_command(label="Save settings", command=self.save_settings)
+        settings_menu.add_command(label="Load settings", command=self.load_settings)
         menu_bar.add_command(label="About", command=self.about)
 
         self.similarity_threshold_window = None
         self.blurry_threshold_window = None
         self.image_filetypes_window = None
         self.preferences_window = None
+
 
         #bottom frame
 
@@ -119,6 +133,32 @@ class App(tk.Tk):
         self.btn_stop = ttk.Button(top_left_frame, text="Stop", command=self.stop)
         self.btn_stop.pack(fill="x", ipady=10, side="bottom")
 
+    #function that saves image_filetypes, similarity_threshold, blurry_threshold and initialdir in a json file that is named "settings.json", if the file already exists, it is overwritten
+
+    def save_settings(self):
+        settings = {}
+        settings["image_filetypes"] = image_filetypes
+        settings["similarity_threshold"] = similarity_threshold
+        settings["blurry_threshold"] = blurry_threshold
+        settings["initialdir"] = initialdir
+        with open("settings.json", 'w') as outfile:
+            json.dump(settings, outfile)
+
+    #function that loads image_filetypes, similarity_threshold, blurry_threshold and initialdir from a json file that is asked to the user, default is "settings.json"
+    def load_settings(self):
+        global image_filetypes
+        global similarity_threshold
+        global blurry_threshold
+        global initialdir
+        filename = filedialog.askopenfilename(initialdir = "./",title = "Select file",filetypes = (("json files","*.json"),("all files","*.*")))
+        with open(filename) as json_file:
+            settings = json.load(json_file)
+            image_filetypes = settings["image_filetypes"]
+            similarity_threshold = settings["similarity_threshold"]
+            blurry_threshold = settings["blurry_threshold"]
+            initialdir = settings["initialdir"]
+
+
     def update_current_progress(self, value):
         progress_value = self.current_progress.get()
         if progress_value < 100:
@@ -136,8 +176,6 @@ class App(tk.Tk):
         #start a timer
         global start_time
         start_time = time.time()
-
-
 
         dirs = self.listbox.get(0, tk.END)
         nb_elem=len(dirs)
@@ -300,6 +338,7 @@ class App(tk.Tk):
         similarity_threshold = value
 
     def open_preferences(self):
+        global initialdir
         if self.preferences_window is not None:
             return  # The window is already open, do not open another instance
 
@@ -332,6 +371,7 @@ class App(tk.Tk):
 
         self.dir_input = ttk.Entry(self.middle_frame)
         self.dir_input.pack(ipadx=50,padx=2,pady=2, side="left")
+        self.dir_input.insert(0, initialdir)
 
         self.btn_dir = ttk.Button(self.middle_frame, text="Select dir", command=self.select_dir)
         self.btn_dir.pack(after=self.dir_input, side="right", padx=2, pady=2)
