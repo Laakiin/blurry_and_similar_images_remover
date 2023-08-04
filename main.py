@@ -133,8 +133,8 @@ class App(tk.Tk):
         self.btn_stop = ttk.Button(top_left_frame, text="Stop", command=self.stop)
         self.btn_stop.pack(fill="x", ipady=10, side="bottom")
 
-    #function that saves image_filetypes, similarity_threshold, blurry_threshold and initialdir in a json file that is named "settings.json", if the file already exists, it is overwritten
 
+    ##########SETTINGS MENU FUNCTIONS############
     def save_settings(self):
         settings = {}
         settings["image_filetypes"] = image_filetypes
@@ -143,8 +143,6 @@ class App(tk.Tk):
         settings["initialdir"] = initialdir
         with open("settings.json", 'w') as outfile:
             json.dump(settings, outfile)
-
-    #function that loads image_filetypes, similarity_threshold, blurry_threshold and initialdir from a json file that is asked to the user, default is "settings.json"
     def load_settings(self):
         global image_filetypes
         global similarity_threshold
@@ -157,19 +155,210 @@ class App(tk.Tk):
             similarity_threshold = settings["similarity_threshold"]
             blurry_threshold = settings["blurry_threshold"]
             initialdir = settings["initialdir"]
+    ##########SIMILARITY THRESHOLD FUNCTIONS############
+    def open_similarity_threshold(self):
+        if self.similarity_threshold_window is not None:
+            return  # The window is already open, do not open another instance
+
+        self.similarity_threshold_window = tk.Toplevel(self)
+        self.similarity_threshold_window.title("Similarity threshold")
+        self.similarity_threshold_window.geometry("300x120")
+        self.similarity_threshold_window.resizable(False, False)
+
+        self.similarity_threshold_window.grid_rowconfigure(0, weight=1)
+        self.similarity_threshold_window.grid_rowconfigure(1, weight=1)
+        self.similarity_threshold_window.grid_columnconfigure(0, weight=1)
+        self.similarity_threshold_window.grid_columnconfigure(1, weight=1)
+
+        #add menu bar to the window with a info button
+        self.menu_bar = tk.Menu(self.similarity_threshold_window)
+        self.similarity_threshold_window.config(menu=self.menu_bar)
+        self.menu_bar.add_command(label="Info", command=self.info_similarity_threshold)
+
+        self.label = ttk.Label(self.similarity_threshold_window, text="Similarity threshold")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.slider = tk.Scale(self.similarity_threshold_window, from_=0, to=1, resolution=0.01, orient="horizontal")
+        self.slider.set(float(similarity_threshold))
+        self.slider.pack(fill="x", padx=10, pady=2)
+
+        self.btn_save = ttk.Button(self.similarity_threshold_window, text="Save", command=self.save_similarity_threshold)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+    def info_similarity_threshold(self):
+        tk.messagebox.showinfo("Info", "The similarity threshold is a value between 0 and 1 that represents the similarity between two images. The higher the value, the more similar the images must be to be considered duplicates.")
+    def save_similarity_threshold(self):
+        similarity_threshold = self.slider.get()
+        self.similarity_threshold_window.destroy()
+        self.similarity_threshold_window = None  # Reset the reference to None after the window is closed
+        self.update_similarity_threshold(similarity_threshold)
+    def update_similarity_threshold(self, value):
+        global similarity_threshold
+        similarity_threshold = value
+    ##########PREFERENCES FUNCTIONS############
+    def open_preferences(self):
+        global initialdir
+        if self.preferences_window is not None:
+            return  # The window is already open, do not open another instance
+
+        self.preferences_window = tk.Toplevel(self)
+        self.preferences_window.title("Preferences")
+        self.preferences_window.geometry("300x120")
+        self.preferences_window.resizable(False, False)
+
+        self.preferences_window.grid_rowconfigure(0, weight=1)
+        self.preferences_window.grid_rowconfigure(1, weight=1)
+        self.preferences_window.grid_columnconfigure(0, weight=1)
+        self.preferences_window.grid_columnconfigure(1, weight=1)
+
+        self.upper_frame = ttk.Frame(self.preferences_window)
+        self.upper_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
+
+        self.middle_frame = ttk.Frame(self.preferences_window)
+        self.middle_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
+
+        self.lower_frame = ttk.Frame(self.preferences_window)
+        self.lower_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
+
+        #add menu bar to the window with a info button
+        self.menu_bar = tk.Menu(self.preferences_window)
+        self.preferences_window.config(menu=self.menu_bar)
+        self.menu_bar.add_command(label="Info", command=self.info_preferences)
+
+        self.label = ttk.Label(self.upper_frame, text="Preferences")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.dir_input = ttk.Entry(self.middle_frame)
+        self.dir_input.pack(ipadx=50,padx=2,pady=2, side="left")
+        self.dir_input.insert(0, initialdir)
+
+        self.btn_dir = ttk.Button(self.middle_frame, text="Select dir", command=self.select_dir)
+        self.btn_dir.pack(after=self.dir_input, side="right", padx=2, pady=2)
+
+        self.btn_save = ttk.Button(self.lower_frame, text="Save", command=self.save_preferences)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+    def select_dir(self):
+        dir = filedialog.askdirectory(initialdir=initialdir, title="Select directory")
+        self.dir_input.delete(0, tk.END)
+        self.dir_input.insert(0, dir)
+    def info_preferences(self):
+        tk.messagebox.showinfo("Info", "Here you can select the initial directory where the you will be while adding directories.")
+    def save_preferences(self):
+        preferences = self.dir_input.get()
+        self.preferences_window.destroy()
+        self.preferences_window = None  # Reset the reference to None after the window is closed
+        self.update_preferences(preferences)
+    def update_preferences(self, value):
+        global initialdir
+        initialdir = value
+    ##########BLURRY THRESHOLD FUNCTIONS############
+    def open_blurry_threshold(self):
+        if self.blurry_threshold_window is not None:
+            return
+
+        self.blurry_threshold_window = tk.Toplevel(self)
+        self.blurry_threshold_window.title("Blurry threshold")
+        self.blurry_threshold_window.geometry("300x110")
+        self.blurry_threshold_window.resizable(False, False)
+
+        self.blurry_threshold_window.grid_rowconfigure(0, weight=1)
+        self.blurry_threshold_window.grid_rowconfigure(1, weight=1)
+        self.blurry_threshold_window.grid_columnconfigure(0, weight=1)
+        self.blurry_threshold_window.grid_columnconfigure(1, weight=1)
+
+        #add menu bar to the window with a info button
+        self.menu_bar = tk.Menu(self.blurry_threshold_window)
+        self.blurry_threshold_window.config(menu=self.menu_bar)
+        self.menu_bar.add_command(label="Info", command=self.info_blurry_threshold)
+
+        self.label = ttk.Label(self.blurry_threshold_window, text="Blurry threshold")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.slider = tk.Scale(self.blurry_threshold_window, from_=0, to=50, resolution=1, orient="horizontal")
+        self.slider.set(float(blurry_threshold))
+        self.slider.pack(fill="x", padx=10, pady=2)
+
+        self.btn_save = ttk.Button(self.blurry_threshold_window, text="Save", command=self.save_blurry_threshold)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+    def info_blurry_threshold(self):
+        tk.messagebox.showinfo("Info", f"The blurry threshold is a value between 0 and 50 that represents the maximum amount of blur an image can have to be considered 'too' blurry.\n(The lower, the blurrier)")
+    def save_blurry_threshold(self):
+        blurry_threshold = self.slider.get()
+        self.blurry_threshold_window.destroy()
+        self.blurry_threshold_window = None
+        self.update_blurry_threshold(blurry_threshold)
+    def update_blurry_threshold(self, value):
+        global blurry_threshold
+        blurry_threshold = value
+    ##########IMAGE FILETYPES FUNCTIONS############
+    def open_image_filetypes(self):
+        if self.image_filetypes_window is not None:
+            return
+
+        self.image_filetypes_window = tk.Toplevel(self)
+        self.image_filetypes_window.title("Image filetypes")
+        self.image_filetypes_window.geometry("300x110")
+        self.image_filetypes_window.resizable(False, False)
+
+        self.image_filetypes_window.grid_rowconfigure(0, weight=1)
+        self.image_filetypes_window.grid_rowconfigure(1, weight=1)
+        self.image_filetypes_window.grid_columnconfigure(0, weight=1)
+        self.image_filetypes_window.grid_columnconfigure(1, weight=1)
+
+        #add menu bar to the window with a info button
+        self.menu_bar = tk.Menu(self.image_filetypes_window)
+        self.image_filetypes_window.config(menu=self.menu_bar)
+        self.menu_bar.add_command(label="Info", command=self.info_image_filetypes)
+
+        self.label = ttk.Label(self.image_filetypes_window, text="Image filetypes")
+        self.label.pack(fill="x", padx=10, pady=2)
+
+        self.entry = ttk.Entry(self.image_filetypes_window)
+        self.entry.insert(0, image_filetypes)
+        self.entry.pack(fill="x", padx=10, pady=2)
 
 
-    def update_current_progress(self, value):
-        progress_value = self.current_progress.get()
-        if progress_value < 100:
-            self.current_progress.set(progress_value + value)
+        self.btn_save = ttk.Button(self.image_filetypes_window, text="Save", command=self.save_image_filetypes)
+        self.btn_save.pack(fill="x", padx=10, pady=8)
+    def info_image_filetypes(self):
+        tk.messagebox.showinfo("Info", "The image filetypes are the filetypes that will be considered as images. The filetypes must be separated by a space. For example: .jpg .png .jpeg")
+    def save_image_filetypes(self):
+        image_filetypes = self.entry.get()
+        self.image_filetypes_window.destroy()
+        self.image_filetypes_window = None
+        self.update_image_filetypes(image_filetypes)
+    def update_image_filetypes(self, value):
+        global image_filetypes
+        #split the string into a list
+        image_filetypes = value.split(" ")
+    ##########ABOUT FUNCTION############
+    def about(self):
+        tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrently in v{ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
 
-    #stop function that stop the start function and the analysis of the images
+    ##########WINDOW FUNCTIONS############
+    def add(self):
+        dirs = askopendirnames(title="Select a directory", initialdir=initialdir, okbuttontext="Select",
+                               cancelbuttontext="Cancel", foldercreation=False)
+        child_dirs = []
+        for dir in dirs:
+            child_dirs.append(self.listchilddirs(dir))
+        # add the selected directories and their subdirectories to the listbox
+        for i in range(len(child_dirs)):
+            for j in range(len(child_dirs[i])):
+                if child_dirs[i][j] not in self.listbox.get(0, tk.END):
+                    self.listbox.insert(tk.END, child_dirs[i][j])
+    def delete(self):
+        if self.listbox.curselection() == ():
+            return
+        # get the index of the selected line
+        indexes = []
+        index = self.listbox.curselection()
+        indexes = list(index)
+        # delete the selected line
+        for i in range(len(indexes)):
+            self.listbox.delete(indexes[i])
     def stop(self):
         global stop
         stop = True
-
-
     def start(self):
         global stop
         stop = False
@@ -238,46 +427,19 @@ class App(tk.Tk):
             tk.messagebox.showinfo("Task stopped", f"The task has been stopped after\nTime elapsed: {elapsed_time}")
             return
         return
-
-    #function that deletes a line in the listbox searching by the content of the line and not the selected line
+    def listchilddirs(self,rootdir):
+        dirs = []
+        dirs.append(rootdir)
+        for path in glob(f'{rootdir}/*/**/', recursive=True):
+            dirs.append(path)
+        return dirs
     def delete_line(self,line):
         #get the index of the line
         index=self.listbox.get(0, tk.END).index(line)
         #delete the linef
         self.listbox.delete(index)
-    def add(self):
-        dirs = askopendirnames(title="Select a directory", initialdir=initialdir , okbuttontext="Select", cancelbuttontext="Cancel", foldercreation=False)
-        child_dirs = []
-        for dir in dirs:
-            child_dirs.append(self.listchilddirs(dir))
-        #add the selected directories and their subdirectories to the listbox
-        for i in range(len(child_dirs)):
-            for j in range(len(child_dirs[i])):
-                if child_dirs[i][j] not in self.listbox.get(0, tk.END):
-                    self.listbox.insert(tk.END, child_dirs[i][j])
-
-
-    def delete(self):
-        if self.listbox.curselection() == ():
-            return
-        #get the index of the selected line
-
-        indexes=[]
-        index=self.listbox.curselection()
-        indexes=list(index)
-        #delete the selected line
-        for i in range(len(indexes)):
-            self.listbox.delete(indexes[i])
-
-    #function that clears the listbox
     def clear_list(self):
         self.listbox.delete(0, tk.END)
-
-    def clear(self):
-        self.text.configure(state="normal")
-        self.text.delete("1.0", tk.END)
-        self.text.configure(state="disabled")
-
     def addText(self, txt, arg):
 
         self.text.configure(state="normal")
@@ -295,194 +457,16 @@ class App(tk.Tk):
             self.text.tag_config("end", foreground="white")
         self.text.configure(state="disabled")
         self.text.see("end")
+    def clear(self):
+        self.text.configure(state="normal")
+        self.text.delete("1.0", tk.END)
+        self.text.configure(state="disabled")
+    def update_current_progress(self, value):
+        progress_value = self.current_progress.get()
+        if progress_value < 100:
+            self.current_progress.set(progress_value + value)
 
-    def open_similarity_threshold(self):
-        if self.similarity_threshold_window is not None:
-            return  # The window is already open, do not open another instance
-
-        self.similarity_threshold_window = tk.Toplevel(self)
-        self.similarity_threshold_window.title("Similarity threshold")
-        self.similarity_threshold_window.geometry("300x120")
-        self.similarity_threshold_window.resizable(False, False)
-
-        self.similarity_threshold_window.grid_rowconfigure(0, weight=1)
-        self.similarity_threshold_window.grid_rowconfigure(1, weight=1)
-        self.similarity_threshold_window.grid_columnconfigure(0, weight=1)
-        self.similarity_threshold_window.grid_columnconfigure(1, weight=1)
-
-        #add menu bar to the window with a info button
-        self.menu_bar = tk.Menu(self.similarity_threshold_window)
-        self.similarity_threshold_window.config(menu=self.menu_bar)
-        self.menu_bar.add_command(label="Info", command=self.info_similarity_threshold)
-
-        self.label = ttk.Label(self.similarity_threshold_window, text="Similarity threshold")
-        self.label.pack(fill="x", padx=10, pady=2)
-
-        self.slider = tk.Scale(self.similarity_threshold_window, from_=0, to=1, resolution=0.01, orient="horizontal")
-        self.slider.set(float(similarity_threshold))
-        self.slider.pack(fill="x", padx=10, pady=2)
-
-        self.btn_save = ttk.Button(self.similarity_threshold_window, text="Save", command=self.save_similarity_threshold)
-        self.btn_save.pack(fill="x", padx=10, pady=8)
-
-    def info_similarity_threshold(self):
-        tk.messagebox.showinfo("Info", "The similarity threshold is a value between 0 and 1 that represents the similarity between two images. The higher the value, the more similar the images must be to be considered duplicates.")
-    def save_similarity_threshold(self):
-        similarity_threshold = self.slider.get()
-        self.similarity_threshold_window.destroy()
-        self.similarity_threshold_window = None  # Reset the reference to None after the window is closed
-        self.update_similarity_threshold(similarity_threshold)
-
-    def update_similarity_threshold(self, value):
-        global similarity_threshold
-        similarity_threshold = value
-
-    def open_preferences(self):
-        global initialdir
-        if self.preferences_window is not None:
-            return  # The window is already open, do not open another instance
-
-        self.preferences_window = tk.Toplevel(self)
-        self.preferences_window.title("Preferences")
-        self.preferences_window.geometry("300x120")
-        self.preferences_window.resizable(False, False)
-
-        self.preferences_window.grid_rowconfigure(0, weight=1)
-        self.preferences_window.grid_rowconfigure(1, weight=1)
-        self.preferences_window.grid_columnconfigure(0, weight=1)
-        self.preferences_window.grid_columnconfigure(1, weight=1)
-
-        self.upper_frame = ttk.Frame(self.preferences_window)
-        self.upper_frame.grid(row=0, column=0, columnspan=2, sticky="nsew")
-
-        self.middle_frame = ttk.Frame(self.preferences_window)
-        self.middle_frame.grid(row=1, column=0, columnspan=2, sticky="nsew")
-
-        self.lower_frame = ttk.Frame(self.preferences_window)
-        self.lower_frame.grid(row=2, column=0, columnspan=2, sticky="nsew")
-
-        #add menu bar to the window with a info button
-        self.menu_bar = tk.Menu(self.preferences_window)
-        self.preferences_window.config(menu=self.menu_bar)
-        self.menu_bar.add_command(label="Info", command=self.info_preferences)
-
-        self.label = ttk.Label(self.upper_frame, text="Preferences")
-        self.label.pack(fill="x", padx=10, pady=2)
-
-        self.dir_input = ttk.Entry(self.middle_frame)
-        self.dir_input.pack(ipadx=50,padx=2,pady=2, side="left")
-        self.dir_input.insert(0, initialdir)
-
-        self.btn_dir = ttk.Button(self.middle_frame, text="Select dir", command=self.select_dir)
-        self.btn_dir.pack(after=self.dir_input, side="right", padx=2, pady=2)
-
-        self.btn_save = ttk.Button(self.lower_frame, text="Save", command=self.save_preferences)
-        self.btn_save.pack(fill="x", padx=10, pady=8)
-
-    def select_dir(self):
-        dir = filedialog.askdirectory(initialdir=initialdir, title="Select directory")
-        self.dir_input.delete(0, tk.END)
-        self.dir_input.insert(0, dir)
-    def info_preferences(self):
-        tk.messagebox.showinfo("Info", "Here you can select the initial directory where the you will be while adding directories.")
-    def save_preferences(self):
-        preferences = self.dir_input.get()
-        self.preferences_window.destroy()
-        self.preferences_window = None  # Reset the reference to None after the window is closed
-        self.update_preferences(preferences)
-
-    def update_preferences(self, value):
-        global initialdir
-        initialdir = value
-    def open_blurry_threshold(self):
-        if self.blurry_threshold_window is not None:
-            return
-
-        self.blurry_threshold_window = tk.Toplevel(self)
-        self.blurry_threshold_window.title("Blurry threshold")
-        self.blurry_threshold_window.geometry("300x110")
-        self.blurry_threshold_window.resizable(False, False)
-
-        self.blurry_threshold_window.grid_rowconfigure(0, weight=1)
-        self.blurry_threshold_window.grid_rowconfigure(1, weight=1)
-        self.blurry_threshold_window.grid_columnconfigure(0, weight=1)
-        self.blurry_threshold_window.grid_columnconfigure(1, weight=1)
-
-        #add menu bar to the window with a info button
-        self.menu_bar = tk.Menu(self.blurry_threshold_window)
-        self.blurry_threshold_window.config(menu=self.menu_bar)
-        self.menu_bar.add_command(label="Info", command=self.info_blurry_threshold)
-
-        self.label = ttk.Label(self.blurry_threshold_window, text="Blurry threshold")
-        self.label.pack(fill="x", padx=10, pady=2)
-
-        self.slider = tk.Scale(self.blurry_threshold_window, from_=0, to=50, resolution=1, orient="horizontal")
-        self.slider.set(float(blurry_threshold))
-        self.slider.pack(fill="x", padx=10, pady=2)
-
-        self.btn_save = ttk.Button(self.blurry_threshold_window, text="Save", command=self.save_blurry_threshold)
-        self.btn_save.pack(fill="x", padx=10, pady=8)
-
-    def info_blurry_threshold(self):
-        tk.messagebox.showinfo("Info", f"The blurry threshold is a value between 0 and 50 that represents the maximum amount of blur an image can have to be considered 'too' blurry.\n(The lower, the blurrier)")
-
-    def save_blurry_threshold(self):
-        blurry_threshold = self.slider.get()
-        self.blurry_threshold_window.destroy()
-        self.blurry_threshold_window = None
-        self.update_blurry_threshold(blurry_threshold)
-
-    def update_blurry_threshold(self, value):
-        global blurry_threshold
-        blurry_threshold = value
-
-
-    def open_image_filetypes(self):
-        if self.image_filetypes_window is not None:
-            return
-
-        self.image_filetypes_window = tk.Toplevel(self)
-        self.image_filetypes_window.title("Image filetypes")
-        self.image_filetypes_window.geometry("300x110")
-        self.image_filetypes_window.resizable(False, False)
-
-        self.image_filetypes_window.grid_rowconfigure(0, weight=1)
-        self.image_filetypes_window.grid_rowconfigure(1, weight=1)
-        self.image_filetypes_window.grid_columnconfigure(0, weight=1)
-        self.image_filetypes_window.grid_columnconfigure(1, weight=1)
-
-        #add menu bar to the window with a info button
-        self.menu_bar = tk.Menu(self.image_filetypes_window)
-        self.image_filetypes_window.config(menu=self.menu_bar)
-        self.menu_bar.add_command(label="Info", command=self.info_image_filetypes)
-
-        self.label = ttk.Label(self.image_filetypes_window, text="Image filetypes")
-        self.label.pack(fill="x", padx=10, pady=2)
-
-        self.entry = ttk.Entry(self.image_filetypes_window)
-        self.entry.insert(0, image_filetypes)
-        self.entry.pack(fill="x", padx=10, pady=2)
-
-
-        self.btn_save = ttk.Button(self.image_filetypes_window, text="Save", command=self.save_image_filetypes)
-        self.btn_save.pack(fill="x", padx=10, pady=8)
-
-    def info_image_filetypes(self):
-        tk.messagebox.showinfo("Info", "The image filetypes are the filetypes that will be considered as images. The filetypes must be separated by a space. For example: .jpg .png .jpeg")
-    def save_image_filetypes(self):
-        image_filetypes = self.entry.get()
-        self.image_filetypes_window.destroy()
-        self.image_filetypes_window = None
-        self.update_image_filetypes(image_filetypes)
-
-    def update_image_filetypes(self, value):
-        global image_filetypes
-        #split the string into a list
-        image_filetypes = value.split(" ")
-
-    def about(self):
-        tk.messagebox.showinfo("About", f"This software was created by Laakiin\nCurrently in v{ver}\nSource code available on GitHub: https://github.com/Laakiin/blurry_and_similar_images_delete")
-
+    ##########CORE FUNCTIONS############
     def list_img(self,path,image_filetypes):
         imgs = []
         for file in listdir(path):
@@ -491,14 +475,6 @@ class App(tk.Tk):
             else:
                 continue
         return imgs
-
-    def listchilddirs(self,rootdir):
-        dirs = []
-        dirs.append(rootdir)
-        for path in glob(f'{rootdir}/*/**/', recursive=True):
-            dirs.append(path)
-        return dirs
-
     def remove_blurry(self,imgs,logs_file):
         global blurry_threshold
         global stop
@@ -541,7 +517,6 @@ class App(tk.Tk):
             logs_file.write("PermissionError\n")
             self.remove_blurry(imgs, logs_file)
             return imgs, rmv
-
     def remove_double(self,imgs,logs_file):
         global similarity_threshold
         global stop
