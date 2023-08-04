@@ -10,13 +10,17 @@ import numpy as np
 import cv2
 import glob
 
-ver="1.6"
+
+ver="1.7"
 
 blurry_threshold = "10"
 similarity_threshold = "0.9"
 image_filetypes = [".jpg", ".png", ".jpeg", ".JPG", ".JPEG", ".PNG"]
 
 initialdir = os.getcwd()
+
+stop=False
+
 
 
 class App(tk.Tk):
@@ -81,7 +85,9 @@ class App(tk.Tk):
         self.btn_clear = ttk.Button(bottom_frame, text="Clear", command=self.clear)
         self.btn_clear.pack(fill="x")
 
-        self.progress_current = ttk.Progressbar(bottom_frame, orient="horizontal", length=200, mode="determinate", )
+        self.current_progress = tk.IntVar()
+
+        self.progress_current = ttk.Progressbar(bottom_frame,variable=self.current_progress, orient="horizontal", length=200, mode="determinate", )
         self.progress_current.pack(fill="x")
         self.progress_current["value"] = 0
         self.progress_current["maximum"] = 100
@@ -97,7 +103,7 @@ class App(tk.Tk):
         #top right frame
         dirs = []
         #display of a list of lines in a listbox widget with a scrollbar in the top right frame
-        self.listbox = tk.Listbox(top_right_frame, bg="white", fg="black")
+        self.listbox = tk.Listbox(top_right_frame,selectmode='multiple', bg="white", fg="black")
         self.listbox.pack(side="left", expand=True, fill="both")
         self.scrollbar = tk.Scrollbar(top_right_frame, orient="vertical")
         self.scrollbar.config(command=self.listbox.yview)
@@ -116,12 +122,29 @@ class App(tk.Tk):
         self.btn_start = ttk.Button(top_left_frame, text="Start", command=self.start)
         self.btn_start.pack(fill="x", ipady=10, side="bottom")
 
+        self.btn_stop = ttk.Button(top_left_frame, text="Stop", command=self.stop)
+        self.btn_stop.pack(fill="x", ipady=10, side="bottom")
 
+    def update_current_progress(self, value):
+        progress_value = self.current_progress.get()
+        if progress_value < 100:
+            self.current_progress.set(progress_value + value)
+
+    #stop function that stop the start function and the analysis of the images
+    def stop(self):
+        global stop
+        stop = True
 
     def start(self):
+        global stop
+        stop = False
         dirs = self.listbox.get(0, tk.END)
         nb_elem=len(dirs)
-        step=100/nb_elem
+        print("Nb elem: ",nb_elem)
+        if nb_elem != 0:
+            step=100/nb_elem
+        else:
+            step=0
         if dirs == ():
             #add a message box to inform the user that no directory has been selected
             tk.messagebox.showerror("No directory selected", "Please select at least one directory")
@@ -132,7 +155,10 @@ class App(tk.Tk):
         global image_filetypes
         #get the list of directories from the listbox
         for i in range(len(dirs)):
+            if stop:
+                break
             self.update()
+            self.progress_total["value"] =0
             imgs=self.list_img(dirs[i],image_filetypes)
             logs_file = open("logs.txt", "a")
             logs_file.write(f"------------------------------------\n")
@@ -144,19 +170,29 @@ class App(tk.Tk):
             logs_file.write("Logs begin:\n")
             self.addText(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n")
             blur_removed, rmv = self.remove_blurry(imgs, logs_file)
+            self.current_progress.set(100)
             logs_file.write(f"Blurry images removed: \n{rmv}\n")
             self.addText(f"Blurry images removed: \n{rmv}\n")
             double_removed, rmv = self.remove_double(blur_removed, logs_file)
+            self.current_progress.set(100)
             self.addText(f"Double images removed: \n{rmv}\n")
             logs_file.write(f"Double images removed: \n{rmv}\n")
             logs_file.write("Logs end\n")
             logs_file.write(f"------------------------------------\n")
             logs_file.close()
-            self.delete_line(dirs[i])
             self.progress_total["value"] += step
+            if not stop:
+                self.delete_line(dirs[i])
 
-        tk.messagebox.showinfo("Task complete", "The task has been completed")
-        print("Program finished")
+
+        if not stop:
+            tk.messagebox.showinfo("Task complete", "The task has been completed")
+            print("Program finished")
+            return
+        else:
+            tk.messagebox.showinfo("Task stopped", "The task has been stopped")
+            print("Program stopped")
+            return
         return
 
     #function that deletes a line in the listbox searching by the content of the line and not the selected line
@@ -173,9 +209,11 @@ class App(tk.Tk):
         #add the selected directories and their subdirectories to the listbox
         for i in range(len(child_dirs)):
             for j in range(len(child_dirs[i])):
-                self.listbox.insert(tk.END, child_dirs[i][j])
-        print(child_dirs)
-        print("Directory added")
+                if child_dirs[i][j] not in self.listbox.get(0, tk.END):
+                    self.listbox.insert(tk.END, child_dirs[i][j])
+                    print("Directories added")
+                else:
+                    print(f"{child_dirs[i][j]} already in the listbox")
 
 
     def delete(self):
@@ -212,6 +250,7 @@ class App(tk.Tk):
         self.text.configure(state="normal")
         self.text.insert(tk.END, txt)
         self.text.configure(state="disabled")
+        self.text.see("end")
 
     def open_similarity_threshold(self):
         if self.similarity_threshold_window is not None:
@@ -420,11 +459,14 @@ class App(tk.Tk):
 
     def remove_blurry(self,imgs,logs_file):
         global blurry_threshold
-        self.progress_current = 0
+        global stop
+        self.current_progress.set(0)
         step = 100/len(imgs)
         try:
             rmv = []
             for i in range(len(imgs)):
+                if stop:
+                    break
                 self.update()
                 img = np.array(Image.open(f"{imgs[i]}"))
                 laplacian = cv2.Laplacian(img, cv2.CV_64F).var()
@@ -438,9 +480,14 @@ class App(tk.Tk):
                     rmv.append(imgs[i])
                     os.remove(imgs[i])
                     imgs.remove(imgs[i])
+                    print(step)
+                    self.update_current_progress(step)
+
                 else:
+                    self.update_current_progress(step)
                     continue
-                self.progress_current += step
+
+
             return imgs, rmv
         except IndexError:
             return imgs, rmv
@@ -456,13 +503,18 @@ class App(tk.Tk):
 
     def remove_double(self,imgs,logs_file):
         global similarity_threshold
+        global stop
         rmv=[]
-        self.progress_current = 0
+        self.current_progress.set(0)
         len_img=len(imgs)
         step = 100/(len_img*(len_img-1))
         try:
             for i in range(len(imgs)):
+                if stop:
+                    break
                 for j in range(len(imgs)):
+                    if stop:
+                        break
                     self.update()
                     if i != j:
                         img1 = np.array(Image.open(f"{imgs[i]}"))
@@ -480,8 +532,10 @@ class App(tk.Tk):
                                 rmv.append(imgs[i])
                                 os.remove(imgs[i])
                                 imgs.remove(imgs[i])
+                                self.update_current_progress(step)
                                 break
                             else:
+                                self.update_current_progress(step)
                                 continue
                         else:
                             continue
@@ -490,7 +544,6 @@ class App(tk.Tk):
                 #remove the image from the list
                 imgs.remove(imgs[i])
                 #update the progress bar
-                self.progress_current += step
             return imgs, rmv
         except IndexError:
             return imgs, rmv
@@ -503,6 +556,7 @@ class App(tk.Tk):
             logs_file.write("PermissionError\n")
             self.remove_double(imgs,logs_file)
             return imgs, rmv
+
 
 if __name__ == "__main__":
     app = App()
