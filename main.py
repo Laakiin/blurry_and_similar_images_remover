@@ -11,7 +11,7 @@ import cv2
 import glob
 
 
-ver="1.7"
+ver="1.8"
 
 blurry_threshold = "10"
 similarity_threshold = "0.9"
@@ -75,7 +75,7 @@ class App(tk.Tk):
         #bottom frame
 
         #add a text widget to the bottom frame with a scrollbar
-        self.text = tk.Text(middle_frame, bg="white", fg="black")
+        self.text = tk.Text(middle_frame, bg="black", fg="white")
         self.text.pack(side="left", expand=True, fill="both")
         self.scrollbar = tk.Scrollbar(middle_frame, orient="vertical")
         self.scrollbar.config(command=self.text.yview)
@@ -135,6 +135,7 @@ class App(tk.Tk):
         global stop
         stop = True
 
+
     def start(self):
         global stop
         stop = False
@@ -156,6 +157,8 @@ class App(tk.Tk):
         #get the list of directories from the listbox
         for i in range(len(dirs)):
             if stop:
+                self.current_progress.set(0)
+                self.progress_total["value"] = 0
                 break
             self.update()
             self.progress_total["value"] =0
@@ -163,19 +166,19 @@ class App(tk.Tk):
             logs_file = open("logs.txt", "a")
             logs_file.write(f"------------------------------------\n")
             logs_file.write(f"Images that are going to be analysed: {imgs}\n")
-            self.addText(f"Images that are going to be analysed in {dirs[i]}: {imgs}\n")
+            self.addText(f"Images that are going to be analysed in {dirs[i]}: {imgs}\n","other")
             logs_file.write(f"Number of images: {len(imgs)}\n")
-            self.addText(f"Number of images: {len(imgs)}\n")
+            self.addText(f"Number of images: {len(imgs)}\n","other")
             logs_file.write(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n")
             logs_file.write("Logs begin:\n")
-            self.addText(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n")
+            self.addText(f"{os.popen('date /t').read()}{os.popen('time /t').read()}\n","other")
             blur_removed, rmv = self.remove_blurry(imgs, logs_file)
             self.current_progress.set(100)
             logs_file.write(f"Blurry images removed: \n{rmv}\n")
-            self.addText(f"Blurry images removed: \n{rmv}\n")
+            self.addText(f"Blurry images removed: \n{rmv}\n","info")
             double_removed, rmv = self.remove_double(blur_removed, logs_file)
             self.current_progress.set(100)
-            self.addText(f"Double images removed: \n{rmv}\n")
+            self.addText(f"Double images removed: \n{rmv}\n","info")
             logs_file.write(f"Double images removed: \n{rmv}\n")
             logs_file.write("Logs end\n")
             logs_file.write(f"------------------------------------\n")
@@ -236,19 +239,27 @@ class App(tk.Tk):
         self.listbox.delete(0, tk.END)
         print("Listbox cleared")
 
-    def print_btn(self,btns , i):
-        self.addText(f"{btns[i]} pressed\n")
-        print(f"{btns[i]} pressed")
-
     def clear(self):
         self.text.configure(state="normal")
         self.text.delete("1.0", tk.END)
         self.text.configure(state="disabled")
         print("Cleared")
 
-    def addText(self, txt):
+    def addText(self, txt, arg):
+
         self.text.configure(state="normal")
+        self.text.tag_add("end", "end -1 line")
         self.text.insert(tk.END, txt)
+        if arg=="info":
+            self.text.tag_config("end", foreground="yellow")
+        if arg=="error":
+            self.text.tag_config("end", foreground="red")
+        if arg=="success":
+            self.text.tag_config("end", foreground="green")
+        if arg == "other":
+            self.text.tag_config("end", foreground="blue")
+        else:
+            self.text.tag_config("end", foreground="white")
         self.text.configure(state="disabled")
         self.text.see("end")
 
@@ -466,17 +477,19 @@ class App(tk.Tk):
             rmv = []
             for i in range(len(imgs)):
                 if stop:
+                    self.current_progress.set(0)
+                    self.progress_total["value"] = 0
                     break
                 self.update()
                 img = np.array(Image.open(f"{imgs[i]}"))
                 laplacian = cv2.Laplacian(img, cv2.CV_64F).var()
                 logs_file.write(f"Blurry value of '{imgs[i]}': {laplacian}\n")
                 print(f"Blurry value of '{imgs[i]}': {laplacian}")
-                self.addText(f"Blurry value of '{imgs[i]}': {laplacian}\n")
+                self.addText(f"Blurry value of '{imgs[i]}': {laplacian}\n","osef")
                 if laplacian < int(blurry_threshold):
                     logs_file.write(f"{imgs[i]} is too blurry and has been deleted\n")
                     print(f"{imgs[i]} is too blurry and has been deleted")
-                    self.addText(f"{imgs[i]} is too blurry and has been deleted\n")
+                    self.addText(f"{imgs[i]} is too blurry and has been deleted\n","info")
                     rmv.append(imgs[i])
                     os.remove(imgs[i])
                     imgs.remove(imgs[i])
@@ -511,9 +524,13 @@ class App(tk.Tk):
         try:
             for i in range(len(imgs)):
                 if stop:
+                    self.current_progress.set(0)
+                    self.progress_total["value"] = 0
                     break
                 for j in range(len(imgs)):
                     if stop:
+                        self.current_progress.set(0)
+                        self.progress_total["value"] = 0
                         break
                     self.update()
                     if i != j:
@@ -524,11 +541,11 @@ class App(tk.Tk):
                             logs_file.write(
                                 f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n")
                             print(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%")
-                            self.addText(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n")
+                            self.addText(f"Similarity between '{imgs[i]}' and '{imgs[j]}': {round(uqi_value * 100, 2)}%\n","osef")
                             if uqi_value > float(similarity_threshold):
                                 logs_file.write(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n")
                                 print(f"{imgs[i]} is similar to {imgs[j]} and has been deleted")
-                                self.addText(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n")
+                                self.addText(f"{imgs[i]} is similar to {imgs[j]} and has been deleted\n","info")
                                 rmv.append(imgs[i])
                                 os.remove(imgs[i])
                                 imgs.remove(imgs[i])
