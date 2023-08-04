@@ -9,12 +9,10 @@ import cv2
 from glob import glob
 import time
 
-
 ver="1.9"
 
+###GLOBAL VARIABLES###
 
-#if there is a json file with the settings, use it to fill blurry and similarity thresholds, image filetypes and initial directory
-#otherwise, use the default values
 try:
     import json
     with open("settings.json") as json_file:
