@@ -1,6 +1,15 @@
-# Blurry and Similar Images Remover
+# Blurry and Similar Images Remover (BnSIR)
 
-BnSIR is a software used to delete too blurry images and one of the copies of 2 similar images.
+**Nettoyez vos collections d'images en supprimant les photos floues et les doublons**
 
+BnSIR est un outil simple et efficace pour :
+- **Supprimer les images trop floues**.
+- **Éliminer les doublons** ou images trop similaires (en conservant une seule copie).
 
-Source code free to use for your projects, but please mention me if you do use my code.
+Le code source est libre d'utilisation pour vos propres projets. Si vous l'utilisez, merci de mentionner l'auteur original.
+
+---
+
+## À propos
+
+Ce projet est idéal pour organiser et optimiser vos bibliothèques d'images, que ce soit pour un usage personnel ou professionnel.
